@@ -3,32 +3,21 @@
 #include <array>
 #include <complex>
 
-#define F_N 1000
-
 using Im = std::complex<float>;
 using namespace std::complex_literals;
 
-std::array<Im, F_N> f_t()
-{
-    std::array<Im, F_N> f;
-    for (int i = 0; i < F_N; ++i)
-    {
-        f[i].real((float)i / 10.f);
-        f[i].imag(10.f * std::sin(f[i].real()));
-    }
-    return f;
-}
+Im f_avg;
 
-Im c_n(const std::array<Im, F_N> &f, int n)
+Im c_n(const std::vector<Im> &f, int n)
 {
     Im c;
 
-    float dt = 1.f / F_N;
-    for (int i = 0; i < F_N; ++i)
+    float dt = 1.f / f.size();
+    for (int i = 0; i < f.size(); ++i)
     {
         float t = i * dt;
         float arg = -(float)n * 2.f * M_PI * t;
-        Im tmp = f[i] * Im(
+        Im tmp = (f[i] - f_avg) * Im(
             std::cos(arg),
             std::sin(arg)
         );
@@ -47,14 +36,14 @@ int main(int argc, char **argv)
     SDL_Renderer *rend = SDL_CreateRenderer(win, -1,
         SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
-    std::array<Im, F_N> f = f_t();
+    bool image_drawn = false;
+    bool mouse_down = false;
+    std::vector<Im> f;
 
-    int range = 50;
+    int range = 100;
     int N = 1 + range * 2;
     std::vector<Im> vc(N);
-
-    for (int i = 0; i < N; ++i)
-        vc[i] = c_n(f, i - range);
+    bool vc_calculated = false;
 
     float t = 0.f;
 
@@ -66,9 +55,27 @@ int main(int argc, char **argv)
         {
             if (evt.type == SDL_QUIT)
                 running = false;
+
+            if (evt.type == SDL_MOUSEBUTTONDOWN)
+                mouse_down = true;
+            if (evt.type == SDL_MOUSEBUTTONUP)
+            {
+                image_drawn = true;
+                mouse_down = false;
+
+                for (const auto &p : f)
+                    f_avg += p;
+                f_avg /= f.size();
+            }
+
+            if (evt.type == SDL_MOUSEMOTION && mouse_down)
+            {
+                f.emplace_back(Im(evt.motion.x, evt.motion.y));
+            }
         }
 
-        t += 0.001f;
+        if (image_drawn)
+            t += 5.f / f.size();
 
         SDL_RenderClear(rend);
 
@@ -77,29 +84,40 @@ int main(int argc, char **argv)
         for (size_t i = 1; i < f.size(); ++i)
         {
             SDL_RenderDrawLineF(rend,
-                f[i].real() * 10.f + 0.f,
-                f[i].imag() * 10.f + 300.f,
-                f[i - 1].real() * 10.f + 0.f,
-                f[i - 1].imag() * 10.f + 300.f);
+                f[i].real(),
+                f[i].imag(),
+                f[i - 1].real(),
+                f[i - 1].imag());
         }
 
-        SDL_SetRenderDrawColor(rend, 255, 255, 255, 255);
-
-        Im orig;
-        for (int i = 0; i < N; ++i)
+        if (image_drawn)
         {
-            int n = i - range;
-            float x = 2.f * M_PI * (float)n * t;
-            Im next = orig + vc[i] * Im(
-                std::cos(x),
-                std::sin(x)
-            );
-            SDL_RenderDrawLineF(rend,
-                orig.real() * 10.f + 0.f,
-                orig.imag() * 10.f + 300.f,
-                next.real() * 10.f + 0.f,
-                next.imag() * 10.f + 300.f);
-            orig = next;
+            if (!vc_calculated)
+            {
+                for (int i = 0; i < N; ++i)
+                    vc[i] = c_n(f, i - range);
+
+                vc_calculated = true;
+            }
+
+            SDL_SetRenderDrawColor(rend, 255, 255, 255, 255);
+
+            Im orig;
+            for (int i = 0; i < N; ++i)
+            {
+                int n = i - range;
+                float x = 2.f * M_PI * (float)n * t;
+                Im next = orig + vc[i] * Im(
+                    std::cos(x),
+                    std::sin(x)
+                );
+                SDL_RenderDrawLineF(rend,
+                    orig.real() + f_avg.real(),
+                    orig.imag() + f_avg.imag(),
+                    next.real() + f_avg.real(),
+                    next.imag() + f_avg.imag());
+                orig = next;
+            }
         }
 
         SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
