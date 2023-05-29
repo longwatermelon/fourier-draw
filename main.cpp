@@ -57,7 +57,13 @@ int main(int argc, char **argv)
                 running = false;
 
             if (evt.type == SDL_MOUSEBUTTONDOWN)
+            {
+                image_drawn = false;
+                vc_calculated = false;
+                f.clear();
                 mouse_down = true;
+            }
+
             if (evt.type == SDL_MOUSEBUTTONUP)
             {
                 image_drawn = true;
