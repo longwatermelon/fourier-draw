@@ -69,6 +69,12 @@ int main(int argc, char **argv)
                 image_drawn = true;
                 mouse_down = false;
 
+                Im back = f.back();
+                for (int i = 0; i < 100; ++i)
+                {
+                    f.emplace_back(back + (f[0] - back) / 100.f * (float)(i + 1));
+                }
+
                 for (const auto &p : f)
                     f_avg += p;
                 f_avg /= f.size();
