@@ -2,6 +2,8 @@
 #include <vector>
 #include <array>
 #include <complex>
+#include <map>
+#include <algorithm>
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
@@ -31,6 +33,18 @@ Im c_n(const std::vector<Im> &f, int n)
     return c;
 }
 
+void draw_circle(SDL_Renderer* rend, int cx, int cy, int r)
+{
+    for (int y = -r; y < r; ++y)
+    {
+        for (int x = -r; x < r; ++x)
+        {
+            if (std::abs(std::sqrt(x * x + y * y) - r) <= 1.f)
+                SDL_RenderDrawPoint(rend, cx + x, cy + y);
+        }
+    }
+}
+
 SDL_Window *win;
 SDL_Renderer *rend;
 
@@ -38,7 +52,7 @@ bool image_drawn = false;
 bool mouse_down = false;
 std::vector<Im> f;
 
-int range = 100;
+int range = 30;
 int N = 1 + range * 2;
 std::vector<Im> vc(N);
 bool vc_calculated = false;
@@ -134,6 +148,11 @@ void run()
                     orig.imag() + f_avg.imag(),
                     next.real() + f_avg.real(),
                     next.imag() + f_avg.imag());
+                draw_circle(rend,
+                    orig.real() + f_avg.real(),
+                    orig.imag() + f_avg.imag(),
+                    std::sqrt(vc[i].real() * vc[i].real() + vc[i].imag() * vc[i].imag())
+                );
                 orig = next;
             }
         }
@@ -148,7 +167,7 @@ int main(int argc, char **argv)
     SDL_Init(SDL_INIT_VIDEO);
     win = SDL_CreateWindow("Fourier draw",
         SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-        600, 600, SDL_WINDOW_SHOWN);
+        800, 800, SDL_WINDOW_SHOWN);
     rend = SDL_CreateRenderer(win, -1,
         SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
