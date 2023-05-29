@@ -13,7 +13,7 @@ Im c_n(const std::vector<Im> &f, int n)
     Im c;
 
     float dt = 1.f / f.size();
-    for (int i = 0; i < f.size(); ++i)
+    for (size_t i = 0; i < f.size(); ++i)
     {
         float t = i * dt;
         float arg = -(float)n * 2.f * M_PI * t;
