@@ -59,6 +59,9 @@ bool vc_calculated = false;
 
 float t = 0.f;
 
+bool render_original_drawing = true;
+std::vector<Im> fourier_drawing;
+
 void run()
 {
     bool running = true;
@@ -77,7 +80,9 @@ void run()
                 image_drawn = false;
                 vc_calculated = false;
                 f.clear();
+                fourier_drawing.clear();
                 mouse_down = true;
+                render_original_drawing = true;
             }
 
             if (evt.type == SDL_MOUSEBUTTONUP)
@@ -100,6 +105,16 @@ void run()
             {
                 f.emplace_back(Im(evt.motion.x, evt.motion.y));
             }
+
+            if (evt.type == SDL_KEYDOWN)
+            {
+                switch (evt.key.keysym.sym)
+                {
+                case SDLK_SPACE:
+                    render_original_drawing = !render_original_drawing;
+                    break;
+                }
+            }
         }
 
         if (image_drawn)
@@ -109,17 +124,36 @@ void run()
             t += 5.f / f.size();
 #endif
 
+        if (t >= 1.f)
+        {
+            t = 0.f;
+            fourier_drawing.clear();
+        }
+
         SDL_RenderClear(rend);
 
         SDL_SetRenderDrawColor(rend, 100, 100, 100, 255);
 
-        for (size_t i = 1; i < f.size(); ++i)
+        if (render_original_drawing)
+        {
+            for (size_t i = 1; i < f.size(); ++i)
+            {
+                SDL_RenderDrawLineF(rend,
+                    f[i].real(),
+                    f[i].imag(),
+                    f[i - 1].real(),
+                    f[i - 1].imag());
+            }
+        }
+
+        SDL_SetRenderDrawColor(rend, 255, 255, 255, 255);
+        for (size_t i = 1; i < fourier_drawing.size(); ++i)
         {
             SDL_RenderDrawLineF(rend,
-                f[i].real(),
-                f[i].imag(),
-                f[i - 1].real(),
-                f[i - 1].imag());
+                fourier_drawing[i].real(),
+                fourier_drawing[i].imag(),
+                fourier_drawing[i - 1].real(),
+                fourier_drawing[i - 1].imag());
         }
 
         if (image_drawn)
@@ -132,7 +166,8 @@ void run()
                 vc_calculated = true;
             }
 
-            SDL_SetRenderDrawColor(rend, 255, 255, 255, 255);
+            SDL_SetRenderDrawBlendMode(rend, SDL_BLENDMODE_BLEND);
+            SDL_SetRenderDrawColor(rend, 240, 240, 255, 180);
 
             Im orig;
             for (int i = 0; i < N; ++i)
@@ -155,6 +190,9 @@ void run()
                 );
                 orig = next;
             }
+
+            fourier_drawing.emplace_back(orig + f_avg);
+            SDL_SetRenderDrawBlendMode(rend, SDL_BLENDMODE_NONE);
         }
 
         SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
