@@ -83,6 +83,7 @@ void run()
                 fourier_drawing.clear();
                 mouse_down = true;
                 render_original_drawing = true;
+                t = 0.f;
             }
 
             if (evt.type == SDL_MOUSEBUTTONUP)
